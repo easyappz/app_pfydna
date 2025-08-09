@@ -29,6 +29,15 @@ const UserSchema = new mongoose.Schema(
       max: 120,
       default: undefined,
     },
+    filterSettings: {
+      gender: {
+        type: String,
+        enum: ['male', 'female', 'other', 'any'],
+        default: 'any',
+      },
+      ageFrom: { type: Number, min: 0, max: 120, default: null },
+      ageTo: { type: Number, min: 0, max: 120, default: null },
+    },
   },
   { timestamps: true }
 );

@@ -17,6 +17,9 @@ const uploadPhoto = require('@src/controllers/photos/uploadPhoto');
 const getMyPhotos = require('@src/controllers/photos/getMyPhotos');
 const toggleActiveForRating = require('@src/controllers/photos/toggleActiveForRating');
 
+const getNextPhotoForRating = require('@src/controllers/ratings/getNextPhoto');
+const createRating = require('@src/controllers/ratings/createRating');
+
 const router = express.Router();
 
 // Serve API schema for frontend integration
@@ -63,5 +66,9 @@ router.post('/photos/activate', authMiddleware, activatePhoto);
 router.post('/photos/upload', authMiddleware, uploadPhoto);
 router.get('/photos/my', authMiddleware, getMyPhotos);
 router.post('/photos/:photoId/toggle-active', authMiddleware, toggleActiveForRating);
+
+// Ratings - new endpoints
+router.get('/ratings/next', authMiddleware, getNextPhotoForRating);
+router.post('/ratings', authMiddleware, createRating);
 
 module.exports = router;

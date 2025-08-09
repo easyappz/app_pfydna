@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Easyappz API
-  version: '1.1.0'
+  version: '1.2.0'
 servers:
   - url: /api
 paths:
@@ -275,6 +275,138 @@ paths:
                   error: { type: string }
         '401': { description: Unauthorized }
         '404': { description: Photo not found }
+        '500': { description: Server error }
+
+  /ratings/next:
+    get:
+      summary: Get next photo for rating by filters
+      description: |
+        Returns a single random photo active for rating that matches the provided or default filters.
+        Excludes: user's own photos, already rated by the user, and photos whose owners do not meet filters.
+        If no query parameters are provided, defaults are taken from user.filterSettings.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: gender
+          schema:
+            type: string
+            enum: [male, female, other, any]
+          description: Owner gender filter. Defaults to user.filterSettings.gender or 'any'.
+        - in: query
+          name: ageFrom
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 120
+          description: Owner age lower bound (inclusive). Defaults to user.filterSettings.ageFrom.
+        - in: query
+          name: ageTo
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 120
+          description: Owner age upper bound (inclusive). Defaults to user.filterSettings.ageTo.
+      responses:
+        '200':
+          description: Next photo to rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photo:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      dataBase64: { type: string }
+                      mimeType: { type: string, nullable: true }
+                      isActiveForRating: { type: boolean }
+                  owner:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      gender: { type: string, nullable: true }
+                      age: { type: integer, nullable: true }
+        '400':
+          description: Bad request (invalid filters)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '401': { description: Unauthorized }
+        '404':
+          description: No photo found for these filters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '500': { description: Server error }
+
+  /ratings:
+    post:
+      summary: Create a rating and update points in a transaction
+      description: |
+        Creates a unique rating per {photoId, raterId}. In a single transaction:
+        1) creates the rating,
+        2) adds +1 point to the rater,
+        3) deducts -1 point from the photo owner (rejected if owner would go below 0).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [photoId, value]
+              properties:
+                photoId:
+                  type: string
+                value:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+      responses:
+        '201':
+          description: Rating created and balances updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rating:
+                    type: object
+                    properties:
+                      photoId: { type: string }
+                      value: { type: integer }
+                  balances:
+                    type: object
+                    properties:
+                      rater: { type: integer }
+                      owner: { type: integer }
+        '400':
+          description: Bad request (e.g., invalid value, insufficient owner points)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '401': { description: Unauthorized }
+        '404': { description: Photo or user not found }
+        '409':
+          description: Duplicate rating
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
         '500': { description: Server error }
 
 components:
