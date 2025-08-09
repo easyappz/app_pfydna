@@ -25,6 +25,9 @@ export const resetPassword = async ({ email, code, newPassword }) => {
   return data; // { message }
 };
 
+// Backward compatibility alias for existing imports
+export const requestReset = requestPasswordReset;
+
 // Aliases used by AuthContext
 export const login = authLogin;
 export const register = authRegister;
