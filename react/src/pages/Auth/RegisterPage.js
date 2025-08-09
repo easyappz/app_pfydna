@@ -10,7 +10,7 @@ export default function RegisterPage() {
 
   const onFinish = async (values) => {
     try {
-      await register(values.email, values.password);
+      await register({ email: values.email, password: values.password });
       message.success('Регистрация успешно выполнена!');
       navigate('/rate', { replace: true });
     } catch (e) {
