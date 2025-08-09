@@ -24,14 +24,28 @@ const LoginPage = () => {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
-      <Card title="Вход" style={{ width: 380 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', padding: 16 }}>
+      <Card title="Вход" style={{ width: 380, borderRadius: 8 }}>
         <Form layout="vertical" onFinish={onFinish}>
-          <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Введите email' }]}> 
-            <Input placeholder="you@example.com" />
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: 'Введите email' },
+              { type: 'email', message: 'Некорректный email' },
+            ]}
+          >
+            <Input placeholder="you@example.com" autoComplete="email" />
           </Form.Item>
-          <Form.Item label="Пароль" name="password" rules={[{ required: true, message: 'Введите пароль' }]}> 
-            <Input.Password placeholder="••••••" />
+          <Form.Item
+            label="Пароль"
+            name="password"
+            rules={[
+              { required: true, message: 'Введите пароль' },
+              { min: 6, message: 'Минимум 6 символов' },
+            ]}
+          >
+            <Input.Password placeholder="••••••" autoComplete="current-password" />
           </Form.Item>
           <Button type="primary" htmlType="submit" block loading={loading}>
             Войти
