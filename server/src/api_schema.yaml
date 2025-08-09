@@ -1,15 +1,77 @@
 openapi: 3.0.0
 info:
   title: Easyappz API
-  version: '1.5.0'
+  version: '1.6.0'
 servers:
   - url: /
 tags:
+  - name: meta
   - name: auth
   - name: users
   - name: photos
   - name: ratings
 paths:
+  /api/schema:
+    get:
+      tags: [meta]
+      summary: Get API schema (OpenAPI YAML)
+      description: Returns the server's OpenAPI schema in YAML format for frontend integration.
+      responses:
+        '200':
+          description: YAML schema
+          content:
+            text/yaml:
+              schema:
+                type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/hello:
+    get:
+      tags: [meta]
+      summary: Simple hello endpoint
+      responses:
+        '200':
+          description: Hello response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/status:
+    get:
+      tags: [meta]
+      summary: Health/status endpoint
+      responses:
+        '200':
+          description: Status response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  timestamp: { type: string, format: date-time }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /api/auth/register:
     post:
       tags: [auth]
@@ -241,30 +303,30 @@ paths:
   /api/users/me:
     get:
       tags: [users]
-      summary: Get my user profile
-      description: Returns the authenticated user's profile with filter settings.
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: User profile
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/UserPublic'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
+    summary: Get my user profile
+    description: Returns the authenticated user's profile with filter settings.
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: User profile
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/UserPublic'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Error' }
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Error' }
     patch:
       tags: [users]
       summary: Update my profile fields

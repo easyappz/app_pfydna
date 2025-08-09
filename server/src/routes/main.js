@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 
@@ -39,7 +38,7 @@ router.get('/schema', async (req, res) => {
   }
 });
 
-// Health endpoints (examples)
+// Health endpoints
 router.get('/hello', async (req, res) => {
   try {
     res.json({ message: 'Hello from API!' });
@@ -68,16 +67,16 @@ router.get('/users/me', authMiddleware, getUserProfile);
 router.patch('/users/me', authMiddleware, updateUserProfile);
 router.patch('/users/filter-settings', authMiddleware, updateUserFilterSettings);
 
-// Points & Photos (existing)
+// Points & Photos (legacy)
 router.post('/points/rate', authMiddleware, ratePhoto);
 router.post('/photos/activate', authMiddleware, activatePhoto);
 
-// Photos - new endpoints
+// Photos - current endpoints
 router.post('/photos/upload', authMiddleware, uploadPhoto);
 router.get('/photos/my', authMiddleware, getMyPhotos);
 router.post('/photos/:photoId/toggle-active', authMiddleware, toggleActiveForRating);
 
-// Ratings - new endpoints
+// Ratings - endpoints
 router.get('/ratings/next', authMiddleware, getNextPhotoForRating);
 router.post('/ratings', authMiddleware, createRating);
 

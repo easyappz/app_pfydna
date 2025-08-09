@@ -4,7 +4,6 @@ require('module-alias/register');
 
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
 const apiRoutes = require('@src/routes/main');
@@ -23,9 +22,9 @@ app.use((req, res, next) => {
 
 // Middlewares
 app.use(cors());
-// Increase body size limit to accommodate base64 (1MB binary ~ 1.33MB base64)
-app.use(bodyParser.json({ limit: '3mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '3mb' }));
+// Use built-in body parsers. Limit 2mb; image (<=1MB decoded) is validated in controllers.
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Routes
 app.use('/api', apiRoutes);
@@ -51,15 +50,18 @@ app.use((err, req, res, next) => {
 // DB connection (MongoDB via mongoose)
 (async () => {
   try {
+    if (!process.env.MONGO_URI) {
+      console.warn('Warning: MONGO_URI is not set. Please provide process.env.MONGO_URI to connect MongoDB.');
+    }
     await mongoose.connect(process.env.MONGO_URI);
     console.log('MongoDB connected');
   } catch (error) {
     console.error('MongoDB connection error:', error);
   }
-})();
 
-// Server start
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+  // Server start
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+})();
