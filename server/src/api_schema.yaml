@@ -2,25 +2,117 @@ openapi: 3.0.0
 info:
   title: Easyappz API
   version: '1.0.0'
-  description: |
-    Current public endpoints. Models are defined in Mongoose under server/src/models.
+  description: >-
+    Authentication and password reset API. All responses are JSON unless noted.
 servers:
   - url: /api
 paths:
-  /hello:
-    get:
-      summary: Health hello endpoint
+  /auth/register:
+    post:
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: secret123
       responses:
         '200':
-          description: Successful response
+          description: Registration success
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
+                  token:
                     type: string
-                required: [message]
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      email: { type: string }
+                      points: { type: integer }
+                      createdAt: { type: string }
+                      updatedAt: { type: string }
+        '400':
+          description: Invalid inputs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '500':
+          description: Server error with explicit message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, example: user@example.com }
+                password: { type: string, example: secret123 }
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      email: { type: string }
+                      points: { type: integer }
+                      createdAt: { type: string }
+                      updatedAt: { type: string }
+        '400':
+          description: Missing credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
         '500':
           description: Server error
           content:
@@ -28,27 +120,36 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                required: [error]
-  /status:
+                  error: { type: string }
+  /auth/me:
     get:
-      summary: Service status
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: Status info
+          description: Current user
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    enum: [ok]
-                  timestamp:
-                    type: string
-                    format: date-time
-                required: [status, timestamp]
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      email: { type: string }
+                      points: { type: integer }
+                      createdAt: { type: string }
+                      updatedAt: { type: string }
+        '401':
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
         '500':
           description: Server error
           content:
@@ -56,6 +157,104 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                required: [error]
+                  error: { type: string }
+  /auth/request-reset:
+    post:
+      summary: Request password reset code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, example: user@example.com }
+      responses:
+        '200':
+          description: Reset code created (test mode returns code)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, example: '123456' }
+                  expiresAt: { type: string, example: '2025-01-01T00:15:00.000Z' }
+        '400':
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+  /auth/reset-password:
+    post:
+      summary: Reset password by code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code, newPassword]
+              properties:
+                email: { type: string, example: user@example.com }
+                code: { type: string, example: '123456' }
+                newPassword: { type: string, minLength: 6, example: newSecret123 }
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '400':
+          description: Invalid input or code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

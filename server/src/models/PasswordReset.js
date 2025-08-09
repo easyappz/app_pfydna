@@ -1,15 +1,30 @@
-'use strict';
-
 const mongoose = require('mongoose');
 
-const passwordResetSchema = new mongoose.Schema(
+const PasswordResetSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    code: { type: String, required: true },
-    expiresAt: { type: Date, required: true },
-    used: { type: Boolean, default: false },
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    code: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+    },
+    used: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
-  { versionKey: false }
+  { timestamps: true }
 );
 
-module.exports = mongoose.model('PasswordReset', passwordResetSchema);
+module.exports = mongoose.model('PasswordReset', PasswordResetSchema);

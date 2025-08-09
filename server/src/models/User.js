@@ -1,46 +1,35 @@
-'use strict';
-
 const mongoose = require('mongoose');
 
-const filterSettingsSchema = new mongoose.Schema(
-  {
-    gender: {
-      type: String,
-      enum: ['any', 'male', 'female', 'other'],
-      default: 'any',
-    },
-    ageFrom: { type: Number, default: null },
-    ageTo: { type: Number, default: null },
-  },
-  { _id: false }
-);
-
-const userSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
     email: {
       type: String,
       required: true,
       unique: true,
-      trim: true,
       lowercase: true,
+      trim: true,
+      index: true,
     },
-    passwordHash: { type: String, required: true },
-    name: { type: String, default: '' },
-    gender: {
+    passwordHash: {
       type: String,
-      default: null,
-      validate: {
-        validator: (v) => v === null || ['male', 'female', 'other'].includes(v),
-        message: 'Invalid gender value',
-      },
+      required: true,
     },
-    age: { type: Number, default: null },
-    points: { type: Number, default: 10 },
-    filterSettings: { type: filterSettingsSchema, default: () => ({}) },
+    points: {
+      type: Number,
+      default: 10,
+    },
   },
-  { versionKey: false }
+  { timestamps: true }
 );
 
-userSchema.index({ email: 1 }, { unique: true });
+UserSchema.methods.toSafeJSON = function toSafeJSON() {
+  return {
+    id: this._id.toString(),
+    email: this.email,
+    points: this.points,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
+  };
+};
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('User', UserSchema);

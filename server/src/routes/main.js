@@ -1,19 +1,30 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 
-/**
- * Example mongoose model (commented)
- */
-// const MongoTestSchema = new mongoose.Schema({
-//   value: { type: String, required: true },
-// });
-// const MongoModelTest = mongoose.model('Test', MongoTestSchema);
-// const newTest = new MongoModelTest({ value: 'test-value' });
-// newTest.save();
+const authRegister = require('@src/controllers/authRegister');
+const authLogin = require('@src/controllers/authLogin');
+const authMe = require('@src/controllers/authMe');
+const authRequestReset = require('@src/controllers/authRequestReset');
+const authResetPassword = require('@src/controllers/authResetPassword');
+const authMiddleware = require('@src/controllers/middlewares/auth');
 
 const router = express.Router();
 
-// GET /api/hello
+// Serve API schema for frontend integration
+router.get('/schema', async (req, res) => {
+  try {
+    const schemaPath = path.join(process.cwd(), 'server', 'src', 'api_schema.yaml');
+    const text = fs.readFileSync(schemaPath, 'utf8');
+    res.setHeader('Content-Type', 'text/yaml');
+    return res.send(text);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// Health endpoints (examples)
 router.get('/hello', async (req, res) => {
   try {
     res.json({ message: 'Hello from API!' });
@@ -22,16 +33,19 @@ router.get('/hello', async (req, res) => {
   }
 });
 
-// GET /api/status
 router.get('/status', async (req, res) => {
   try {
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-    });
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Auth routes
+router.post('/auth/register', authRegister);
+router.post('/auth/login', authLogin);
+router.get('/auth/me', authMiddleware, authMe);
+router.post('/auth/request-reset', authRequestReset);
+router.post('/auth/reset-password', authResetPassword);
 
 module.exports = router;
