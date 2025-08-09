@@ -46,6 +46,7 @@ module.exports = async function uploadPhoto(req, res) {
           mimeType: photo.mimeType,
           isActiveForRating: photo.isActiveForRating,
           createdAt: photo.createdAt,
+          updatedAt: photo.updatedAt,
         },
       });
     } catch (err) {
