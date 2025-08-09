@@ -1,8 +1,14 @@
 'use strict';
 
+const mongoose = require('mongoose');
 const { addPoint, deductPoint } = require('@src/controllers/services/pointsService');
 
+function isValidObjectId(id) {
+  return typeof id === 'string' && mongoose.Types.ObjectId.isValid(id);
+}
+
 module.exports = async function ratePhoto(req, res) {
+  let session;
   try {
     const raterId = req.user && (req.user.id || req.user._id);
     const { ownerId, rating } = req.body || {};
@@ -11,49 +17,42 @@ module.exports = async function ratePhoto(req, res) {
       return res.status(401).json({ error: 'Unauthorized: missing user' });
     }
 
-    if (!ownerId) {
-      return res.status(400).json({ error: 'ownerId is required' });
+    if (!ownerId || !isValidObjectId(ownerId)) {
+      return res.status(400).json({ error: 'ownerId is required and must be a valid id' });
     }
 
-    if (typeof rating === 'undefined') {
-      return res.status(400).json({ error: 'rating is required' });
+    const raterStr = String(raterId);
+    const ownerStr = String(ownerId);
+    if (raterStr === ownerStr) {
+      return res.status(400).json({ error: 'You cannot transfer points to yourself' });
     }
 
-    let raterUpdated;
-    try {
-      // Step 1: Add +1 to rater for contributing a rating
-      raterUpdated = await addPoint(raterId, 'rate_photo_reward');
-    } catch (err) {
-      return res.status(err.status || 500).json({ error: err.message });
-    }
-
-    try {
-      // Step 2: Deduct -1 from owner as a cost of receiving a rating
-      const ownerUpdated = await deductPoint(ownerId, 'photo_rated_cost');
-
-      return res.status(200).json({
-        rater: { id: raterUpdated._id.toString(), points: raterUpdated.points },
-        owner: { id: ownerUpdated._id.toString(), points: ownerUpdated.points },
-      });
-    } catch (err) {
-      // Rollback rater reward if owner deduction fails
-      try {
-        await deductPoint(raterId, 'rollback_rate_photo_reward');
-      } catch (rollbackErr) {
-        return res.status(500).json({
-          error: 'Failed to deduct from owner and rollback rater reward',
-          details: {
-            initialError: err.message,
-            rollbackError: rollbackErr.message,
-          },
-        });
+    if (typeof rating !== 'undefined') {
+      const val = Number(rating);
+      if (!Number.isInteger(val) || val < 1 || val > 5) {
+        return res.status(400).json({ error: 'rating must be an integer between 1 and 5 if provided' });
       }
-
-      return res.status(err.status || 500).json({
-        error: err.message,
-      });
     }
+
+    session = await mongoose.startSession();
+
+    const result = await session.withTransaction(async () => {
+      const updatedRater = await addPoint(raterStr, 'rate_photo_reward', { session });
+      const updatedOwner = await deductPoint(ownerStr, 'photo_rated_cost', { session });
+
+      return {
+        rater: { id: updatedRater._id.toString(), points: updatedRater.points },
+        owner: { id: updatedOwner._id.toString(), points: updatedOwner.points },
+      };
+    });
+
+    return res.status(200).json(result);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message });
+  } finally {
+    if (session) {
+      try { await session.endSession(); } catch (_) {}
+    }
   }
 };

@@ -2,12 +2,18 @@
 
 const User = require('@src/models/User');
 
-async function addPoint(userId, reason = 'generic_add') {
+/**
+ * Adds 1 point to user. Never allows negative balances.
+ * @param {string|object} userId
+ * @param {string} reason
+ * @param {{session?: any}} options
+ */
+async function addPoint(userId, reason = 'generic_add', options = {}) {
   try {
     const updated = await User.findByIdAndUpdate(
       userId,
       { $inc: { points: 1 } },
-      { new: true }
+      { new: true, session: options.session }
     );
 
     if (!updated) {
@@ -22,12 +28,18 @@ async function addPoint(userId, reason = 'generic_add') {
   }
 }
 
-async function deductPoint(userId, reason = 'generic_deduct') {
+/**
+ * Deducts 1 point from user if they have at least 1 point.
+ * @param {string|object} userId
+ * @param {string} reason
+ * @param {{session?: any}} options
+ */
+async function deductPoint(userId, reason = 'generic_deduct', options = {}) {
   try {
     const updated = await User.findOneAndUpdate(
       { _id: userId, points: { $gte: 1 } },
       { $inc: { points: -1 } },
-      { new: true }
+      { new: true, session: options.session }
     );
 
     if (!updated) {
@@ -42,6 +54,10 @@ async function deductPoint(userId, reason = 'generic_deduct') {
   }
 }
 
+/**
+ * Ensures user has at least 1 point.
+ * @param {string|object} userId
+ */
 async function requireAtLeastOnePoint(userId) {
   try {
     const user = await User.findById(userId).select('points');

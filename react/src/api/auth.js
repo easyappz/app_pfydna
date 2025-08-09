@@ -24,3 +24,11 @@ export const resetPassword = async ({ email, code, newPassword }) => {
   const { data } = await instance.post('/api/auth/reset-password', { email, code, newPassword });
   return data; // { message }
 };
+
+// Aliases used by AuthContext
+export const login = authLogin;
+export const register = authRegister;
+export const me = async () => {
+  const { user } = await authMe();
+  return user;
+};

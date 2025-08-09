@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { me as apiMe, login as apiLogin, register as apiRegister } from '../api/auth';
 
@@ -21,14 +21,19 @@ export function AuthProvider({ children }) {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['auth', 'me', token],
     queryFn: async () => {
-      const res = await apiMe();
-      return res.user;
+      const user = await apiMe();
+      return user;
     },
     enabled: Boolean(token),
     staleTime: 60_000,
   });
 
   const user = data ?? null;
+  const isReady = token ? !isLoading : true;
+
+  const setUser = useCallback((nextUser) => {
+    queryClient.setQueryData(['auth', 'me', token], nextUser ?? null);
+  }, [queryClient, token]);
 
   const login = useCallback(async (payload) => {
     const res = await apiLogin(payload);
@@ -51,7 +56,10 @@ export function AuthProvider({ children }) {
     await queryClient.resetQueries({ queryKey: ['auth', 'me'] });
   }, [queryClient, setToken]);
 
-  const value = useMemo(() => ({ user, isLoading, isError, token, setToken, login, register, refetchUser: refetch, logout }), [user, isLoading, isError, token, setToken, login, register, refetch, logout]);
+  const value = useMemo(
+    () => ({ user, isLoading, isError, isReady, token, setToken, setUser, login, register, refetchUser: refetch, logout }),
+    [user, isLoading, isError, isReady, token, setToken, setUser, login, register, refetch, logout]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

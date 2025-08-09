@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Easyappz API
-  version: '1.4.0'
+  version: '1.5.0'
 servers:
   - url: /
 tags:
@@ -374,10 +374,12 @@ paths:
   /api/points/rate:
     post:
       tags: [ratings]
-      summary: Rate a photo (sequential point transfer with rollback)
+      summary: Rate a photo (atomic point transfer with rollback)
       description: |
-        Rewards the rater with +1 point, then deducts -1 point from the photo owner.
-        If owner deduction fails (e.g., insufficient points), the rater reward is rolled back.
+        In a single ACID transaction: rewards the rater with +1 point and deducts -1 point from the photo owner.
+        - ownerId must be a valid ObjectId, not equal to the rater's id.
+        - Owner will not go below 0 points (operation is rejected if owner has 0).
+        - If any step fails, the whole transaction is rolled back.
       security:
         - bearerAuth: []
       requestBody:
@@ -386,17 +388,19 @@ paths:
           application/json:
             schema:
               type: object
-              required: [ownerId, rating]
+              required: [ownerId]
               properties:
                 ownerId:
                   type: string
                   description: User ID of the photo owner
                 rating:
                   type: integer
-                  description: Rating value (informational)
+                  minimum: 1
+                  maximum: 5
+                  description: Optional rating value (informational)
       responses:
         '200':
-          description: Rating succeeded and points updated
+          description: Rating succeeded and points updated atomically
           content:
             application/json:
               schema:
@@ -405,7 +409,7 @@ paths:
                   rater: { $ref: '#/components/schemas/PointsBalance' }
                   owner: { $ref: '#/components/schemas/PointsBalance' }
         '400':
-          description: Bad request (e.g., insufficient points or missing fields)
+          description: Bad request (invalid fields or insufficient owner points or self-transfer)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -427,6 +431,7 @@ paths:
       summary: Deprecated legacy photo activation
       description: |
         Legacy endpoint. Use /api/photos/upload and /api/photos/{photoId}/toggle-active instead.
+        Enforces 1MB decoded size limit and requires user to have at least 1 point to activate.
       security:
         - bearerAuth: []
       requestBody:

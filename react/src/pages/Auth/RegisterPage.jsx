@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, message } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { authRegister } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 
 const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
-  const { setSession } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const res = await authRegister(values);
-      setSession(res.token, res.user);
+      await register(values);
       message.success('Регистрация успешна!');
       navigate('/profile', { replace: true });
     } catch (e) {

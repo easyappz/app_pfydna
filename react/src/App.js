@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConfigProvider, theme } from 'antd';
@@ -24,6 +24,7 @@ import PhotoStatsPage from './pages/Photos/PhotoStatsPage';
 import ProfilePage from './pages/User/ProfilePage';
 import FilterSettingsPage from './pages/User/FilterSettingsPage';
 
+import { loadApiSchema } from './api/schema';
 import './App.css';
 
 dayjs.locale('ru');
@@ -31,6 +32,10 @@ dayjs.locale('ru');
 const queryClient = new QueryClient();
 
 function App() {
+  useEffect(() => {
+    loadApiSchema().catch((e) => console.error('Failed to load API schema', e));
+  }, []);
+
   return (
     <ErrorBoundary>
       <ConfigProvider

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, message } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { authLogin } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
-  const { setSession } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/profile';
@@ -14,8 +13,7 @@ const LoginPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const res = await authLogin(values);
-      setSession(res.token, res.user);
+      await login(values);
       message.success('Добро пожаловать!');
       navigate(from, { replace: true });
     } catch (e) {
