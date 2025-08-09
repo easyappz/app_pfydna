@@ -1,26 +1,39 @@
 import instance from './axios';
 
-export async function register(payload) {
-  const { data } = await instance.post('/api/auth/register', payload);
-  return data;
+// POST /api/auth/register
+export async function register({ email, password }) {
+  const response = await instance.post('/api/auth/register', { email, password });
+  return response.data;
 }
 
-export async function login(payload) {
-  const { data } = await instance.post('/api/auth/login', payload);
-  return data;
+// POST /api/auth/login
+export async function login({ email, password }) {
+  const response = await instance.post('/api/auth/login', { email, password });
+  return response.data;
 }
 
-export async function me() {
-  const { data } = await instance.get('/api/auth/me');
-  return data;
+// GET /api/auth/me
+export async function getAuthMe() {
+  const response = await instance.get('/api/auth/me');
+  return response.data;
 }
 
-export async function requestReset(payload) {
-  const { data } = await instance.post('/api/auth/request-reset', payload);
-  return data;
+// POST /api/auth/request-reset
+export async function requestPasswordReset({ email }) {
+  const response = await instance.post('/api/auth/request-reset', { email });
+  return response.data;
 }
 
-export async function resetPassword(payload) {
-  const { data } = await instance.post('/api/auth/reset-password', payload);
-  return data;
+// POST /api/auth/reset-password
+export async function resetPassword({ email, code, newPassword }) {
+  const response = await instance.post('/api/auth/reset-password', { email, code, newPassword });
+  return response.data;
 }
+
+export default {
+  register,
+  login,
+  getAuthMe,
+  requestPasswordReset,
+  resetPassword,
+};
