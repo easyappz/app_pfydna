@@ -1,53 +1,46 @@
-import React, { useState } from 'react';
-import { Card, Form, Input, Button, Typography, Alert, notification } from 'antd';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Button, Card, Form, Input, Typography, message } from 'antd';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import getErrorMessage from '../../utils/getErrorMessage';
 
 export default function LoginPage() {
-  const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [form] = Form.useForm();
+
   const from = location.state?.from?.pathname || '/rate';
 
   const onFinish = async (values) => {
-    setLoading(true);
-    setError('');
     try {
-      await login(values.email.trim(), values.password);
-      notification.success({ message: 'Успешный вход', description: 'Добро пожаловать!' });
+      await login(values.email, values.password);
+      message.success('Добро пожаловать!');
       navigate(from, { replace: true });
     } catch (e) {
-      setError(getErrorMessage(e));
-    } finally {
-      setLoading(false);
+      message.error(e?.response?.data?.error || 'Ошибка авторизации');
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <Card style={{ width: 400 }} title="Вход в аккаунт">
-        {error ? <Alert type="error" message={error} style={{ marginBottom: 16 }} /> : null}
-        <Form layout="vertical" form={form} onFinish={onFinish} disabled={loading}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+      <Card style={{ width: 360 }} title="Вход">
+        <Form form={form} layout="vertical" onFinish={onFinish}>
           <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Введите email' }, { type: 'email', message: 'Некорректный email' }]}>
-            <Input placeholder="example@mail.com" autoFocus />
+            <Input placeholder="email@example.com" />
           </Form.Item>
-          <Form.Item label="Пароль" name="password" rules={[{ required: true, message: 'Введите пароль' }]}> 
-            <Input.Password placeholder="Ваш пароль" />
+          <Form.Item label="Пароль" name="password" rules={[{ required: true, message: 'Введите пароль' }, { min: 6, message: 'Минимум 6 символов' }]}>
+            <Input.Password placeholder="••••••" />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading}>Войти</Button>
-        </Form>
-        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
-          <Typography.Text>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>Войти</Button>
+          </Form.Item>
+          <Typography.Paragraph style={{ marginBottom: 8 }}>
             Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
-          </Typography.Text>
-          <Typography.Text>
-            <Link to="/password-reset">Забыли пароль?</Link>
-          </Typography.Text>
-        </div>
+          </Typography.Paragraph>
+          <Typography.Paragraph>
+            Забыли пароль? <Link to="/password-reset">Сбросить</Link>
+          </Typography.Paragraph>
+        </Form>
       </Card>
     </div>
   );

@@ -1,23 +1,16 @@
 import instance from './axios';
 
-export async function uploadPhoto({ dataBase64, mimeType }) {
-  const res = await instance.post('/api/photos/upload', { dataBase64, mimeType });
-  return res.data.photo;
+export async function uploadPhoto(payload) {
+  const { data } = await instance.post('/api/photos/upload', payload);
+  return data;
 }
 
 export async function getMyPhotos() {
-  const res = await instance.get('/api/photos/my');
-  return res.data.photos || [];
+  const { data } = await instance.get('/api/photos/my');
+  return data;
 }
 
-export async function togglePhotoActive({ photoId, active }) {
-  const body = typeof active === 'boolean' ? { active } : {};
-  const res = await instance.post(`/api/photos/${photoId}/toggle-active`, body);
-  return res.data.photo;
+export async function toggleActive(photoId, desiredState) {
+  const { data } = await instance.post(`/api/photos/${photoId}/toggle-active`, desiredState !== undefined ? { active: desiredState } : {});
+  return data;
 }
-
-export default {
-  uploadPhoto,
-  getMyPhotos,
-  togglePhotoActive,
-};

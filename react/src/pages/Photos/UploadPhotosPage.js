@@ -1,49 +1,48 @@
 import React, { useState } from 'react';
-import { Card, Upload, Button, message } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
-import photosApi from '../../api/photos';
-import getErrorMessage from '../../utils/getErrorMessage';
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+import { Button, Card, Space, Typography, Upload, message } from 'antd';
+import { uploadPhoto } from '../../api/photos';
 
 export default function UploadPhotosPage() {
   const [loading, setLoading] = useState(false);
 
-  const beforeUpload = async (file) => {
-    setLoading(true);
+  const beforeUpload = () => false; // prevent auto upload
+
+  const toBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+
+  const onChange = async ({ file }) => {
+    if (!file) return;
     try {
-      const dataUrl = await fileToBase64(file);
-      const base64 = typeof dataUrl === 'string' ? dataUrl : '';
-      const payload = { dataBase64: base64, mimeType: file.type };
-      await photosApi.upload(payload);
-      message.success('Фото загружено (не активно для рейтинга)');
+      setLoading(true);
+      const dataUrl = await toBase64(file);
+      const mimeType = file.type || 'image/jpeg';
+      const res = await uploadPhoto({ dataBase64: dataUrl, mimeType });
+      if (res?.photo) {
+        message.success('Фото загружено! Активируйте его для участия в рейтинге в разделе Статистика.');
+      } else {
+        message.info('Загрузка завершена');
+      }
     } catch (e) {
-      message.error(getErrorMessage(e));
+      message.error(e?.response?.data?.error || 'Не удалось загрузить фото');
     } finally {
       setLoading(false);
     }
-    return false; // prevent auto upload by antd
   };
 
   return (
     <Card title="Загрузка фото">
-      <Upload.Dragger multiple={false} accept="image/*" beforeUpload={beforeUpload} showUploadList={false} disabled={loading}>
-        <p className="ant-upload-drag-icon">
-          <UploadOutlined />
-        </p>
-        <p className="ant-upload-text">Кликните или перетащите изображение для загрузки</p>
-        <p className="ant-upload-hint">Изображение будет загружено как base64 (до 1MB)</p>
-      </Upload.Dragger>
-      <div style={{ marginTop: 16 }}>
-        <Button loading={loading} disabled>Загрузка...</Button>
-      </div>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Typography.Text>
+          Загрузите фото (до 1 МБ). После загрузки активируйте фото для участия в рейтинге.
+        </Typography.Text>
+        <Upload accept="image/*" maxCount={1} beforeUpload={beforeUpload} showUploadList={false} customRequest={() => {}} onChange={onChange}>
+          <Button loading={loading} type="primary">Выбрать фото</Button>
+        </Upload>
+      </Space>
     </Card>
   );
 }
