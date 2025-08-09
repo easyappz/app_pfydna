@@ -14,6 +14,12 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    name: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      default: undefined,
+    },
     points: {
       type: Number,
       default: 10,
@@ -43,12 +49,19 @@ const UserSchema = new mongoose.Schema(
 );
 
 UserSchema.methods.toSafeJSON = function toSafeJSON() {
+  const fs = this.filterSettings || {};
   return {
     id: this._id.toString(),
     email: this.email,
+    name: this.name || null,
     points: this.points,
     gender: this.gender || null,
     age: typeof this.age === 'number' ? this.age : null,
+    filterSettings: {
+      gender: fs.gender || 'any',
+      ageFrom: typeof fs.ageFrom === 'number' ? fs.ageFrom : null,
+      ageTo: typeof fs.ageTo === 'number' ? fs.ageTo : null,
+    },
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

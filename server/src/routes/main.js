@@ -20,6 +20,11 @@ const toggleActiveForRating = require('@src/controllers/photos/toggleActiveForRa
 const getNextPhotoForRating = require('@src/controllers/ratings/getNextPhoto');
 const createRating = require('@src/controllers/ratings/createRating');
 
+// Users - profile & filters
+const getUserProfile = require('@src/controllers/users/getMe');
+const updateUserProfile = require('@src/controllers/users/updateMe');
+const updateUserFilterSettings = require('@src/controllers/users/updateFilterSettings');
+
 const router = express.Router();
 
 // Serve API schema for frontend integration
@@ -57,6 +62,11 @@ router.post('/auth/login', authLogin);
 router.get('/auth/me', authMiddleware, authMe);
 router.post('/auth/request-reset', authRequestReset);
 router.post('/auth/reset-password', authResetPassword);
+
+// Users - profile & filters
+router.get('/users/me', authMiddleware, getUserProfile);
+router.patch('/users/me', authMiddleware, updateUserProfile);
+router.patch('/users/filter-settings', authMiddleware, updateUserFilterSettings);
 
 // Points & Photos (existing)
 router.post('/points/rate', authMiddleware, ratePhoto);
