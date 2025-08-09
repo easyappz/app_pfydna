@@ -1,15 +1,8 @@
 import instance from './axios';
 
-export const usersApi = {
-  getMe() {
-    return instance.get('/api/users/me');
-  },
-  updateMe(payload) {
-    return instance.patch('/api/users/me', payload);
-  },
-  updateFilterSettings(payload) {
-    return instance.patch('/api/users/filter-settings', payload);
-  },
-};
+export async function getMe() {
+  const res = await instance.get('/api/users/me');
+  return res.data.user;
+}
 
-export default usersApi;
+export default { getMe };
