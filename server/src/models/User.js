@@ -18,6 +18,17 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 10,
     },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      default: undefined,
+    },
+    age: {
+      type: Number,
+      min: 0,
+      max: 120,
+      default: undefined,
+    },
   },
   { timestamps: true }
 );
@@ -27,6 +38,8 @@ UserSchema.methods.toSafeJSON = function toSafeJSON() {
     id: this._id.toString(),
     email: this.email,
     points: this.points,
+    gender: this.gender || null,
+    age: typeof this.age === 'number' ? this.age : null,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

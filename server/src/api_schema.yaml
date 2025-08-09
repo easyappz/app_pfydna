@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Easyappz API
-  version: '1.0.0'
+  version: '1.1.0'
 servers:
   - url: /api
 paths:
@@ -72,10 +72,10 @@ paths:
 
   /photos/activate:
     post:
-      summary: Activate (upload) a photo with base64 validation
+      deprecated: true
+      summary: Deprecated legacy photo activation
       description: |
-        Validates base64 image size (<= 1MB), requires at least 1 point,
-        deducts 1 point and stores the image base64 in DB.
+        Legacy endpoint. Use /photos/upload and /photos/{photoId}/toggle-active instead.
       security:
         - bearerAuth: []
       requestBody:
@@ -88,30 +88,59 @@ paths:
               properties:
                 imageBase64:
                   type: string
-                  description: Base64-encoded image string (may include data URL prefix)
       responses:
         '201':
-          description: Photo created and point deducted
+          description: Legacy response
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   photo:
-                    type: object
-                    properties:
-                      id: { type: string }
-                      ownerId: { type: string }
-                      data: { type: string }
-                      active: { type: boolean }
-                      createdAt: { type: string, format: date-time }
+                    $ref: '#/components/schemas/Photo'
                   owner:
                     type: object
                     properties:
                       id: { type: string }
                       points: { type: integer }
+        '400': { description: Bad request }
+        '401': { description: Unauthorized }
+        '500': { description: Server error }
+
+  /photos/upload:
+    post:
+      summary: Upload a photo (base64, <= 1MB, saved inactive for rating)
+      description: |
+        Accepts a base64-encoded image and a mime type. Validates that decoded size <= 1MB.
+        Stores the photo with isActiveForRating=false. The image is stored and returned as base64.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dataBase64, mimeType]
+              properties:
+                dataBase64:
+                  type: string
+                  description: Base64-encoded image string (may include data URL prefix)
+                mimeType:
+                  type: string
+                  example: image/jpeg
+      responses:
+        '201':
+          description: Photo uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photo:
+                    $ref: '#/components/schemas/Photo'
         '400':
-          description: Bad request (e.g., too big image, insufficient points)
+          description: Bad request (validation error)
           content:
             application/json:
               schema:
@@ -135,9 +164,152 @@ paths:
                 properties:
                   error: { type: string }
 
+  /photos/my:
+    get:
+      summary: Get my photos with aggregated rating statistics
+      description: |
+        Returns a list of photos owned by the current user along with aggregated statistics:
+        - overall average rating and count
+        - breakdown by rater gender
+        - breakdown by rater age groups (0-17, 18-24, 25-34, 35-44, 45-54, 55+, unknown)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of photos with stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photos:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        ownerId: { type: string }
+                        dataBase64: { type: string }
+                        mimeType: { type: string, nullable: true }
+                        isActiveForRating: { type: boolean }
+                        createdAt: { type: string, format: date-time }
+                        stats:
+                          type: object
+                          properties:
+                            overall:
+                              type: object
+                              properties:
+                                average: { type: number, nullable: true }
+                                count: { type: integer }
+                            byGender:
+                              type: object
+                              additionalProperties:
+                                type: object
+                                properties:
+                                  average: { type: number }
+                                  count: { type: integer }
+                            byAgeGroup:
+                              type: object
+                              additionalProperties:
+                                type: object
+                                properties:
+                                  average: { type: number }
+                                  count: { type: integer }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+
+  /photos/{photoId}/toggle-active:
+    post:
+      summary: Toggle photo active state for rating participation
+      description: |
+        Toggles or sets isActiveForRating. When enabling, the owner must have at least 1 point.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: photoId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                active:
+                  type: boolean
+                  description: Desired state. If omitted, the state will be toggled.
+      responses:
+        '200':
+          description: Updated photo state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photo:
+                    $ref: '#/components/schemas/Photo'
+        '400':
+          description: Bad request (e.g., insufficient points)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+        '401': { description: Unauthorized }
+        '404': { description: Photo not found }
+        '500': { description: Server error }
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        points: { type: integer }
+        gender: { type: string, nullable: true, enum: [male, female, other] }
+        age: { type: integer, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Photo:
+      type: object
+      properties:
+        id: { type: string }
+        ownerId: { type: string }
+        dataBase64: { type: string }
+        mimeType: { type: string, nullable: true }
+        isActiveForRating: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Rating:
+      type: object
+      properties:
+        id: { type: string }
+        photoId: { type: string }
+        raterId: { type: string }
+        ownerId: { type: string }
+        value: { type: integer, minimum: 1, maximum: 5 }
+        createdAt: { type: string, format: date-time }

@@ -13,6 +13,10 @@ const authMiddleware = require('@src/controllers/middlewares/auth');
 const ratePhoto = require('@src/controllers/points/ratePhoto');
 const activatePhoto = require('@src/controllers/photos/activatePhoto');
 
+const uploadPhoto = require('@src/controllers/photos/uploadPhoto');
+const getMyPhotos = require('@src/controllers/photos/getMyPhotos');
+const toggleActiveForRating = require('@src/controllers/photos/toggleActiveForRating');
+
 const router = express.Router();
 
 // Serve API schema for frontend integration
@@ -51,8 +55,13 @@ router.get('/auth/me', authMiddleware, authMe);
 router.post('/auth/request-reset', authRequestReset);
 router.post('/auth/reset-password', authResetPassword);
 
-// Points & Photos
+// Points & Photos (existing)
 router.post('/points/rate', authMiddleware, ratePhoto);
 router.post('/photos/activate', authMiddleware, activatePhoto);
+
+// Photos - new endpoints
+router.post('/photos/upload', authMiddleware, uploadPhoto);
+router.get('/photos/my', authMiddleware, getMyPhotos);
+router.post('/photos/:photoId/toggle-active', authMiddleware, toggleActiveForRating);
 
 module.exports = router;

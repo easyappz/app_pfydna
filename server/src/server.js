@@ -23,8 +23,9 @@ app.use((req, res, next) => {
 
 // Middlewares
 app.use(cors());
-app.use(bodyParser.json({ limit: '1mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
+// Increase body size limit to accommodate base64 (1MB binary ~ 1.33MB base64)
+app.use(bodyParser.json({ limit: '3mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '3mb' }));
 
 // Routes
 app.use('/api', apiRoutes);
