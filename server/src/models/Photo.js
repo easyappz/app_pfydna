@@ -1,15 +1,12 @@
-'use strict';
-
 const mongoose = require('mongoose');
 
-const photoSchema = new mongoose.Schema(
+const PhotoSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    data: { type: String, required: true }, // base64 only, size validated in controller (<= 1MB)
-    mimeType: { type: String, default: '' },
-    isActiveForRating: { type: Boolean, default: false },
+    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    data: { type: String, required: true }, // base64
+    active: { type: Boolean, default: true },
   },
-  { timestamps: true, versionKey: false }
+  { timestamps: true }
 );
 
-module.exports = mongoose.model('Photo', photoSchema);
+module.exports = mongoose.model('Photo', PhotoSchema);

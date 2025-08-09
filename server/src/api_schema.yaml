@@ -2,148 +2,59 @@ openapi: 3.0.0
 info:
   title: Easyappz API
   version: '1.0.0'
-  description: >-
-    Authentication and password reset API. All responses are JSON unless noted.
 servers:
   - url: /api
 paths:
-  /auth/register:
+  /points/rate:
     post:
-      summary: Register new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                  example: user@example.com
-                password:
-                  type: string
-                  minLength: 6
-                  example: secret123
-      responses:
-        '200':
-          description: Registration success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                  user:
-                    type: object
-                    properties:
-                      id: { type: string }
-                      email: { type: string }
-                      points: { type: integer }
-                      createdAt: { type: string }
-                      updatedAt: { type: string }
-        '400':
-          description: Invalid inputs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-        '409':
-          description: Email already registered
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-        '500':
-          description: Server error with explicit message
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-  /auth/login:
-    post:
-      summary: Login user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email: { type: string, example: user@example.com }
-                password: { type: string, example: secret123 }
-      responses:
-        '200':
-          description: Login success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token: { type: string }
-                  user:
-                    type: object
-                    properties:
-                      id: { type: string }
-                      email: { type: string }
-                      points: { type: integer }
-                      createdAt: { type: string }
-                      updatedAt: { type: string }
-        '400':
-          description: Missing credentials
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-        '401':
-          description: Invalid credentials
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-  /auth/me:
-    get:
-      summary: Get current user profile
+      summary: Rate a photo (sequential point transfer with rollback)
+      description: |
+        Rewards the rater with +1 point, then deducts -1 point from the photo owner.
+        If owner deduction fails (e.g., insufficient points), the rater reward is rolled back.
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ownerId, rating]
+              properties:
+                ownerId:
+                  type: string
+                  description: User ID of the photo owner
+                rating:
+                  type: integer
+                  description: Rating value (informational)
       responses:
         '200':
-          description: Current user
+          description: Rating succeeded and points updated
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  user:
+                  rater:
                     type: object
                     properties:
                       id: { type: string }
-                      email: { type: string }
                       points: { type: integer }
-                      createdAt: { type: string }
-                      updatedAt: { type: string }
+                  owner:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      points: { type: integer }
+        '400':
+          description: Bad request (e.g., insufficient points or missing fields)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
         '401':
-          description: Unauthorized or invalid token
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -158,39 +69,57 @@ paths:
                 type: object
                 properties:
                   error: { type: string }
-  /auth/request-reset:
+
+  /photos/activate:
     post:
-      summary: Request password reset code
+      summary: Activate (upload) a photo with base64 validation
+      description: |
+        Validates base64 image size (<= 1MB), requires at least 1 point,
+        deducts 1 point and stores the image base64 in DB.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email]
+              required: [imageBase64]
               properties:
-                email: { type: string, example: user@example.com }
+                imageBase64:
+                  type: string
+                  description: Base64-encoded image string (may include data URL prefix)
       responses:
-        '200':
-          description: Reset code created (test mode returns code)
+        '201':
+          description: Photo created and point deducted
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message: { type: string }
-                  code: { type: string, example: '123456' }
-                  expiresAt: { type: string, example: '2025-01-01T00:15:00.000Z' }
+                  photo:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      ownerId: { type: string }
+                      data: { type: string }
+                      active: { type: boolean }
+                      createdAt: { type: string, format: date-time }
+                  owner:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      points: { type: integer }
         '400':
-          description: Invalid email format
+          description: Bad request (e.g., too big image, insufficient points)
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   error: { type: string }
-        '404':
-          description: User not found
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -205,53 +134,7 @@ paths:
                 type: object
                 properties:
                   error: { type: string }
-  /auth/reset-password:
-    post:
-      summary: Reset password by code
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, code, newPassword]
-              properties:
-                email: { type: string, example: user@example.com }
-                code: { type: string, example: '123456' }
-                newPassword: { type: string, minLength: 6, example: newSecret123 }
-      responses:
-        '200':
-          description: Password updated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string }
-        '400':
-          description: Invalid input or code
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+
 components:
   securitySchemes:
     bearerAuth:

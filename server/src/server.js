@@ -34,11 +34,17 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not Found' });
 });
 
-// Global error handler
+// Global error handler: return precise messages and details
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   const status = err.status || 500;
-  res.status(status).json({ error: err.message || 'Internal Server Error' });
+  res.status(status).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      name: err.name || 'Error',
+      code: err.code || null,
+    },
+  });
 });
 
 // DB connection (MongoDB via mongoose)
