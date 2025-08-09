@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: Easyappz API
+  version: "1.0.0"
+  description: >-
+    API specification for the React/Node application. Endpoints will be
+    maintained and expanded step-by-step (auth, base64 photos, rating, filters).
+servers:
+  - url: http://localhost:3001/api
+    description: Local development server
