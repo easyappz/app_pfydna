@@ -1,12 +1,246 @@
 openapi: 3.0.0
 info:
   title: Easyappz API
-  version: '1.3.0'
+  version: '1.4.0'
 servers:
-  - url: /api
+  - url: /
+tags:
+  - name: auth
+  - name: users
+  - name: photos
+  - name: ratings
 paths:
-  /users/me:
+  /api/auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new user
+      description: Creates a new user, returns JWT and public user profile. Initial points = 10.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+            examples:
+              valid:
+                value:
+                  email: demo@example.com
+                  password: secret123
+      responses:
+        '200':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token
+                  user:
+                    $ref: '#/components/schemas/UserPublic'
+              examples:
+                success:
+                  value:
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    user:
+                      id: '665f9a2e1c2b3a0012abcd01'
+                      email: demo@example.com
+                      name: null
+                      points: 10
+                      gender: null
+                      age: null
+                      filterSettings:
+                        gender: any
+                        ageFrom: null
+                        ageTo: null
+                      createdAt: '2025-01-01T10:00:00.000Z'
+                      updatedAt: '2025-01-01T10:00:00.000Z'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidEmail:
+                  value:
+                    error: Invalid email format
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                exists:
+                  value:
+                    error: Email already registered
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/UserPublic' }
+        '400':
+          description: Missing fields
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/auth/me:
     get:
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/UserPublic' }
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/auth/request-reset:
+    post:
+      tags: [auth]
+      summary: Request password reset code
+      description: Creates a 6-digit reset code valid for 15 minutes. In test mode the code is returned in response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Reset created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  code: { type: string, description: 6-digit code }
+                  expiresAt: { type: string, format: date-time }
+        '400':
+          description: Invalid email
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/auth/reset-password:
+    post:
+      tags: [auth]
+      summary: Reset password by code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code, newPassword]
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, description: 6-digit string }
+                newPassword: { type: string, minLength: 6 }
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+        '400':
+          description: Validation error (invalid/expired/used code)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/users/me:
+    get:
+      tags: [users]
       summary: Get my user profile
       description: Returns the authenticated user's profile with filter settings.
       security:
@@ -20,10 +254,19 @@ paths:
                 type: object
                 properties:
                   user:
-                    $ref: '#/components/schemas/User'
-        '401': { description: Unauthorized }
-        '500': { description: Server error }
+                    $ref: '#/components/schemas/UserPublic'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
     patch:
+      tags: [users]
       summary: Update my profile fields
       description: Updates name, gender, and/or age for the authenticated user.
       security:
@@ -58,20 +301,23 @@ paths:
                 type: object
                 properties:
                   user:
-                    $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/UserPublic'
         '400':
           description: Validation error or no fields provided
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { description: Unauthorized }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '500': { description: Server error }
 
-  /users/filter-settings:
+  /api/users/filter-settings:
     patch:
+      tags: [users]
       summary: Update default filter settings
       description: |
         Updates the user's default filterSettings used to fetch photos for rating.
@@ -111,20 +357,23 @@ paths:
                 type: object
                 properties:
                   user:
-                    $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/UserPublic'
         '400':
           description: Validation error
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { description: Unauthorized }
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '500': { description: Server error }
 
-  /points/rate:
+  /api/points/rate:
     post:
+      tags: [ratings]
       summary: Rate a photo (sequential point transfer with rollback)
       description: |
         Rewards the rater with +1 point, then deducts -1 point from the photo owner.
@@ -153,47 +402,31 @@ paths:
               schema:
                 type: object
                 properties:
-                  rater:
-                    type: object
-                    properties:
-                      id: { type: string }
-                      points: { type: integer }
-                  owner:
-                    type: object
-                    properties:
-                      id: { type: string }
-                      points: { type: integer }
+                  rater: { $ref: '#/components/schemas/PointsBalance' }
+                  owner: { $ref: '#/components/schemas/PointsBalance' }
         '400':
           description: Bad request (e.g., insufficient points or missing fields)
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '401':
           description: Unauthorized
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '500':
           description: Server error
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
 
-  /photos/activate:
+  /api/photos/activate:
     post:
+      tags: [photos]
       deprecated: true
       summary: Deprecated legacy photo activation
       description: |
-        Legacy endpoint. Use /photos/upload and /photos/{photoId}/toggle-active instead.
+        Legacy endpoint. Use /api/photos/upload and /api/photos/{photoId}/toggle-active instead.
       security:
         - bearerAuth: []
       requestBody:
@@ -215,18 +448,22 @@ paths:
                 type: object
                 properties:
                   photo:
-                    $ref: '#/components/schemas/Photo'
-                  owner:
                     type: object
                     properties:
                       id: { type: string }
-                      points: { type: integer }
+                      ownerId: { type: string }
+                      data: { type: string }
+                      active: { type: boolean }
+                      createdAt: { type: string, format: date-time }
+                  owner:
+                    $ref: '#/components/schemas/PointsBalance'
         '400': { description: Bad request }
         '401': { description: Unauthorized }
         '500': { description: Server error }
 
-  /photos/upload:
+  /api/photos/upload:
     post:
+      tags: [photos]
       summary: Upload a photo (base64, <= 1MB, saved inactive for rating)
       description: |
         Accepts a base64-encoded image and a mime type. Validates that decoded size <= 1MB.
@@ -261,29 +498,21 @@ paths:
           description: Bad request (validation error)
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '401':
           description: Unauthorized
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '500':
           description: Server error
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
 
-  /photos/my:
+  /api/photos/my:
     get:
+      tags: [photos]
       summary: Get my photos with aggregated rating statistics
       description: |
         Returns a list of photos owned by the current user along with aggregated statistics:
@@ -337,21 +566,16 @@ paths:
           description: Unauthorized
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '500':
           description: Server error
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
 
-  /photos/{photoId}/toggle-active:
+  /api/photos/{photoId}/toggle-active:
     post:
+      tags: [photos]
       summary: Toggle photo active state for rating participation
       description: |
         Toggles or sets isActiveForRating. When enabling, the owner must have at least 1 point.
@@ -387,16 +611,18 @@ paths:
           description: Bad request (e.g., insufficient points)
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { description: Unauthorized }
-        '404': { description: Photo not found }
+        '404':
+          description: Photo not found or not owned by user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '500': { description: Server error }
 
-  /ratings/next:
+  /api/ratings/next:
     get:
+      tags: [ratings]
       summary: Get next photo for rating by filters
       description: |
         Returns a single random photo active for rating that matches the provided or default filters.
@@ -450,23 +676,18 @@ paths:
           description: Bad request (invalid filters)
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { description: Unauthorized }
         '404':
           description: No photo found for these filters
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '500': { description: Server error }
 
-  /ratings:
+  /api/ratings:
     post:
+      tags: [ratings]
       summary: Create a rating and update points in a transaction
       description: |
         Creates a unique rating per {photoId, raterId}. In a single transaction:
@@ -511,20 +732,14 @@ paths:
           description: Bad request (e.g., invalid value, insufficient owner points)
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { description: Unauthorized }
         '404': { description: Photo or user not found }
         '409':
           description: Duplicate rating
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  error: { type: string }
+              schema: { $ref: '#/components/schemas/Error' }
         '500': { description: Server error }
 
 components:
@@ -534,7 +749,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    User:
+    UserPublic:
       type: object
       properties:
         id: { type: string }
@@ -570,3 +785,20 @@ components:
         ownerId: { type: string }
         value: { type: integer, minimum: 1, maximum: 5 }
         createdAt: { type: string, format: date-time }
+    PointsBalance:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User id
+        points:
+          type: integer
+          description: Current points balance
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
