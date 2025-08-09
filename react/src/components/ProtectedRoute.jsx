@@ -3,25 +3,24 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useAuth } from '../context/AuthContext';
 
-export default function ProtectedRoute() {
-  const { token, user, isLoading } = useAuth();
+const ProtectedRoute = () => {
+  const { isReady } = useAuth();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const location = useLocation();
+
+  if (!isReady) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
+        <Spin tip="Загрузка..." />
+      </div>
+    );
+  }
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (isLoading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <Spin size="large" tip="Загрузка..." />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
   return <Outlet />;
-}
+};
+
+export default ProtectedRoute;

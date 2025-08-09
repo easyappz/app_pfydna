@@ -1,46 +1,50 @@
 import React, { useState } from 'react';
-import { Button, Card, Form, Input, Typography, message } from 'antd';
+import { Card, Form, Input, Button, Typography, message } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
+import { authRegister } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 
-export default function RegisterPage() {
-  const { register } = useAuth();
-  const navigate = useNavigate();
+const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
+  const { setSession } = useAuth();
+  const navigate = useNavigate();
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await register(values);
+      const res = await authRegister(values);
+      setSession(res.token, res.user);
       message.success('Регистрация успешна!');
-      navigate('/rate', { replace: true });
+      navigate('/profile', { replace: true });
     } catch (e) {
-      message.error(e?.response?.data?.error || 'Ошибка регистрации');
+      message.error(e?.response?.data?.error || 'Не удалось зарегистрироваться');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
       <Card title="Регистрация" style={{ width: 420 }}>
         <Form layout="vertical" onFinish={onFinish}>
-          <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Введите email' }, { type: 'email', message: 'Неверный email' }]}>
+          <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Введите email' }]}> 
             <Input placeholder="you@example.com" />
           </Form.Item>
-          <Form.Item name="password" label="Пароль" rules={[{ required: true, message: 'Введите пароль' }, { min: 6, message: 'Минимум 6 символов' }]}>
-            <Input.Password placeholder="••••••" />
+          <Form.Item label="Пароль" name="password" rules={[{ required: true, message: 'Введите пароль (минимум 6 символов)' }]}> 
+            <Input.Password placeholder="Минимум 6 символов" />
           </Form.Item>
           <Button type="primary" htmlType="submit" block loading={loading}>
-            Создать аккаунт
+            Зарегистрироваться
           </Button>
+          <div style={{ marginTop: 12 }}>
+            <Typography.Text>
+              Уже есть аккаунт? <Link to="/login">Войти</Link>
+            </Typography.Text>
+          </div>
         </Form>
-        <div style={{ marginTop: 12 }}>
-          <Typography.Text type="secondary">
-            Уже есть аккаунт? <Link to="/login">Войти</Link>
-          </Typography.Text>
-        </div>
       </Card>
     </div>
   );
-}
+};
+
+export default RegisterPage;

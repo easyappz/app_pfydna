@@ -1,93 +1,77 @@
-import React, { useMemo, useState } from 'react';
-import { Layout, Menu, Typography, Avatar, Dropdown, Button, theme, Grid } from 'antd';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { Layout, Menu, Tag, Typography, Space } from 'antd';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
-  StarOutlined,
-  UploadOutlined,
-  BarChartOutlined,
   UserOutlined,
+  UploadOutlined,
+  StarOutlined,
+  BarChartOutlined,
   SettingOutlined,
-  LogoutOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 
-const { Header, Sider, Content, Footer } = Layout;
+const { Header, Content, Sider, Footer } = Layout;
 
-export default function AppLayout() {
-  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
-  const [collapsed, setCollapsed] = useState(false);
-  const location = useLocation();
+const AppLayout = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const screens = Grid.useBreakpoint();
+  const location = useLocation();
+  const { user } = useAuth();
 
   const selectedKey = useMemo(() => {
-    if (location.pathname.startsWith('/rate')) return 'rate';
-    if (location.pathname.startsWith('/upload')) return 'upload';
-    if (location.pathname.startsWith('/stats')) return 'stats';
     if (location.pathname.startsWith('/profile')) return 'profile';
+    if (location.pathname.startsWith('/upload')) return 'upload';
+    if (location.pathname.startsWith('/rate')) return 'rate';
+    if (location.pathname.startsWith('/stats')) return 'stats';
     if (location.pathname.startsWith('/filters')) return 'filters';
     return 'rate';
   }, [location.pathname]);
 
   const items = [
-    { key: 'rate', icon: <StarOutlined />, label: 'Оценка фотографий', onClick: () => navigate('/rate') },
-    { key: 'upload', icon: <UploadOutlined />, label: 'Загрузка фотографий', onClick: () => navigate('/upload') },
-    { key: 'stats', icon: <BarChartOutlined />, label: 'Статистика фотографий', onClick: () => navigate('/stats') },
-    { type: 'divider' },
-    { key: 'profile', icon: <UserOutlined />, label: 'Профиль пользователя', onClick: () => navigate('/profile') },
-    { key: 'filters', icon: <SettingOutlined />, label: 'Настройки фильтров', onClick: () => navigate('/filters') },
+    { key: 'profile', icon: <UserOutlined />, label: 'Профиль', path: '/profile' },
+    { key: 'upload', icon: <UploadOutlined />, label: 'Загрузка фото', path: '/upload' },
+    { key: 'rate', icon: <StarOutlined />, label: 'Оценка', path: '/rate' },
+    { key: 'stats', icon: <BarChartOutlined />, label: 'Статистика', path: '/stats' },
+    { key: 'filters', icon: <SettingOutlined />, label: 'Настройки фильтров', path: '/filters' },
   ];
-
-  const menu = (
-    <Menu
-      items={[
-        { key: 'profile', icon: <UserOutlined />, label: 'Профиль', onClick: () => navigate('/profile') },
-        { key: 'logout', icon: <LogoutOutlined />, danger: true, label: 'Выйти', onClick: logout },
-      ]}
-    />
-  );
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={(value) => setCollapsed(value)}
-        width={screens.lg ? 240 : 200}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 64, margin: 12, color: '#fff' }}>
-          <ThunderboltOutlined style={{ fontSize: 24 }} />
-          {!collapsed && <Typography.Title level={5} style={{ margin: 0, color: '#fff' }}>Easyappz</Typography.Title>}
-        </div>
-        <Menu theme="dark" mode="inline" selectedKeys={[selectedKey]} items={items} />
+      <Sider breakpoint="lg" collapsedWidth="0">
+        <div style={{ height: 48, margin: 16, borderRadius: 6, background: 'rgba(255,255,255,0.2)' }} />
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          onClick={(e) => {
+            const item = items.find((i) => i.key === e.key);
+            if (item) navigate(item.path);
+          }}
+          items={items.map((i) => ({ key: i.key, icon: i.icon, label: i.label }))}
+        />
       </Sider>
       <Layout>
-        <Header style={{ background: colorBgContainer, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography.Title level={5} style={{ margin: 0 }}>Галерея оценок</Typography.Title>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: 600 }}>{user?.name || user?.email}</div>
-              <div style={{ fontSize: 12, color: '#999' }}>Баллы: {user?.points ?? 0}</div>
-            </div>
-            <Dropdown overlay={menu} trigger={['click']}>
-              <Avatar style={{ backgroundColor: '#1677ff' }} size={40}>
-                {(user?.name || user?.email || '?').slice(0, 1).toUpperCase()}
-              </Avatar>
-            </Dropdown>
-            <Button onClick={logout} icon={<LogoutOutlined />} type="text">Выйти</Button>
-          </div>
+        <Header style={{ background: '#fff', padding: '0 24px' }}>
+          <Space size={16} style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography.Title level={4} style={{ margin: 0 }}>Easyappz — Фото-оценки</Typography.Title>
+            <Space>
+              <Typography.Text type="secondary">
+                {user?.name || user?.email || 'Гость'}
+              </Typography.Text>
+              <Tag color="blue">Баланс: {user?.points ?? 0}</Tag>
+            </Space>
+          </Space>
         </Header>
-        <Content style={{ margin: 16 }}>
-          <div style={{ padding: 16, background: colorBgContainer, borderRadius: borderRadiusLG }}>
+        <Content style={{ margin: '16px' }}>
+          <div style={{ padding: 16, minHeight: 'calc(100vh - 160px)', background: '#fff', borderRadius: 8 }}>
             <Outlet />
           </div>
         </Content>
         <Footer style={{ textAlign: 'center' }}>
-          Easyappz · React + Node.js · {new Date().getFullYear()}
+          © {new Date().getFullYear()} Easyappz
         </Footer>
       </Layout>
     </Layout>
   );
-}
+};
+
+export default AppLayout;

@@ -1,78 +1,81 @@
 import React, { useState } from 'react';
-import { Button, Card, Form, Input, Typography, Space, message } from 'antd';
+import { Card, Form, Input, Button, Typography, message, Alert } from 'antd';
 import { Link } from 'react-router-dom';
-import { requestReset, resetPassword } from '../../api/auth';
+import { requestPasswordReset, resetPassword } from '../../api/auth';
 
-export default function PasswordResetPage() {
-  const [loadingReq, setLoadingReq] = useState(false);
-  const [loadingReset, setLoadingReset] = useState(false);
+const PasswordResetPage = () => {
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
   const [testCode, setTestCode] = useState('');
 
-  const onRequest = async (values) => {
-    setLoadingReq(true);
+  const handleRequest = async (values) => {
+    setLoading(true);
     try {
-      const res = await requestReset(values);
-      message.success(res.message || 'Код отправлен');
+      const res = await requestPasswordReset({ email: values.email });
+      setEmail(values.email);
       if (res.code) setTestCode(res.code);
+      message.success('Код восстановления отправлен');
+      setStep(2);
     } catch (e) {
-      message.error(e?.response?.data?.error || 'Ошибка запроса');
+      message.error(e?.response?.data?.error || 'Не удалось отправить код');
     } finally {
-      setLoadingReq(false);
+      setLoading(false);
     }
   };
 
-  const onReset = async (values) => {
-    setLoadingReset(true);
+  const handleReset = async (values) => {
+    setLoading(true);
     try {
-      const res = await resetPassword(values);
-      message.success(res.message || 'Пароль обновлён');
+      await resetPassword({ email, code: values.code, newPassword: values.newPassword });
+      message.success('Пароль обновлён. Теперь можно войти.');
+      setStep(3);
     } catch (e) {
-      message.error(e?.response?.data?.error || 'Ошибка восстановления');
+      message.error(e?.response?.data?.error || 'Не удалось обновить пароль');
     } finally {
-      setLoadingReset(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <Card title="Восстановление пароля" style={{ width: 520 }}>
-        <Space direction="vertical" size={24} style={{ width: '100%' }}>
-          <div>
-            <Typography.Title level={5} style={{ marginTop: 0 }}>Шаг 1. Запросить код</Typography.Title>
-            <Form layout="vertical" onFinish={onRequest}>
-              <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Введите email' }, { type: 'email', message: 'Неверный email' }]}>
-                <Input placeholder="you@example.com" />
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
+      <Card title="Восстановление пароля" style={{ width: 460 }}>
+        {step === 1 && (
+          <Form layout="vertical" onFinish={handleRequest}>
+            <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Введите email' }]}> 
+              <Input placeholder="you@example.com" />
+            </Form.Item>
+            <Button type="primary" htmlType="submit" block loading={loading}>
+              Получить код
+            </Button>
+          </Form>
+        )}
+        {step === 2 && (
+          <>
+            {testCode && (
+              <Alert style={{ marginBottom: 12 }} type="info" showIcon message={`Тестовый код: ${testCode}`} />
+            )}
+            <Form layout="vertical" onFinish={handleReset}>
+              <Form.Item label="Код" name="code" rules={[{ required: true, message: 'Введите код из письма' }]}> 
+                <Input placeholder="6-значный код" />
               </Form.Item>
-              <Button type="primary" htmlType="submit" loading={loadingReq}>Получить код</Button>
-              {testCode && (
-                <Typography.Paragraph type="secondary" style={{ marginTop: 8 }}>
-                  Тестовый код: <Typography.Text code>{testCode}</Typography.Text>
-                </Typography.Paragraph>
-              )}
+              <Form.Item label="Новый пароль" name="newPassword" rules={[{ required: true, message: 'Введите новый пароль' }]}> 
+                <Input.Password placeholder="Минимум 6 символов" />
+              </Form.Item>
+              <Button type="primary" htmlType="submit" block loading={loading}>
+                Обновить пароль
+              </Button>
             </Form>
-          </div>
-
-          <div>
-            <Typography.Title level={5} style={{ marginTop: 0 }}>Шаг 2. Сброс пароля</Typography.Title>
-            <Form layout="vertical" onFinish={onReset}>
-              <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Введите email' }, { type: 'email', message: 'Неверный email' }]}>
-                <Input placeholder="you@example.com" />
-              </Form.Item>
-              <Form.Item name="code" label="Код из письма" rules={[{ required: true, message: 'Введите код' }]}>
-                <Input placeholder="6 цифр" />
-              </Form.Item>
-              <Form.Item name="newPassword" label="Новый пароль" rules={[{ required: true, message: 'Введите новый пароль' }, { min: 6, message: 'Минимум 6 символов' }]}>
-                <Input.Password placeholder="••••••" />
-              </Form.Item>
-              <Button type="primary" htmlType="submit" loading={loadingReset}>Обновить пароль</Button>
-            </Form>
-          </div>
-
-          <Typography.Text type="secondary">
-            Вспомнили пароль? <Link to="/login">Вернуться к входу</Link>
-          </Typography.Text>
-        </Space>
+          </>
+        )}
+        {step === 3 && (
+          <Typography.Paragraph>
+            Пароль обновлён. Перейти на <Link to="/login">страницу входа</Link>.
+          </Typography.Paragraph>
+        )}
       </Card>
     </div>
   );
-}
+};
+
+export default PasswordResetPage;
